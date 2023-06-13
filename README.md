@@ -1,5 +1,3 @@
-# Digikala comments and reviews crawler
+# Wikipedia Uncommon Crawl :)
 
-> Digikala is an Iranian e-commerce company
-
-The crawler is written using Scrapy. I note that only Digikala's API endpoint is used to extract data.
+The crawler is written using Scrapy.
