@@ -1,4 +1,4 @@
-BOT_NAME = 'Wikipedia_uncommon_crawl'
+BOT_NAME = 'Wikipedia-uncommon-crawl'
 
 SPIDER_MODULES = ['crawl.spiders']
 NEWSPIDER_MODULE = 'crawl.spiders'

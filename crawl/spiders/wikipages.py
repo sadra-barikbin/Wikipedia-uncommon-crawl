@@ -39,11 +39,11 @@ class WikiPageSpider(scrapy.Spider):
     def __init__(
         self,
         seed_page_url: str = 'https://en.wikipedia.org/wiki/Human',
-        num_top_languages: int= 80,
-        include_languages: List[str]= [],
-        exclude_languages: List[str]= [],
-        limit_in_gb: int=0.001,
-        limit_in_per_lang_article_count: int = 100,
+        num_top_languages: str= 80,
+        include_languages: str = "",
+        exclude_languages: str = "",
+        limit_in_gb: str=0.001,
+        limit_in_per_lang_article_count: str = 100,
         *args,
         **kwargs
     ):
@@ -52,22 +52,21 @@ class WikiPageSpider(scrapy.Spider):
         self.limit_in_mb = float(limit_in_gb) * 1024
         self.size_in_byte = 0
 
-        self.limit_in_per_lang_article_count = limit_in_per_lang_article_count
+        self.limit_in_per_lang_article_count = int(limit_in_per_lang_article_count)
         self.num_articles_per_lang: Dict[str, int] = defaultdict(lambda: 0)
 
-        self.num_top_languages = num_top_languages
-        self.include_languages = include_languages
-        self.exclude_languages = exclude_languages
-
+        self.num_top_languages = int(num_top_languages)
+        self.include_languages = re.split(" *, *", include_languages)
+        self.exclude_languages = re.split(" *, *", exclude_languages)
         self.seed_page_url = seed_page_url
 
     def parse(self, response: HtmlResponse) -> scrapy.Request:
         name_codes = response.css(".list-of-wikipedias-table").xpath("./tbody/tr/td[4]/a/text()").getall()
         names = response.css(".list-of-wikipedias-table").xpath("./tbody/tr/td[2]/a/text()").getall()
         indices = filter(lambda i: name_codes[i] not in self.exclude_languages, range(len(name_codes)))
-        indices = filter(lambda i: name_codes[i] in self.include_languages or i < self.num_top_languages, indices)
+        indices = filter(lambda i: (name_codes[i] in self.include_languages) or (i < self.num_top_languages), indices)
         self.lang_code_to_name = {name_codes[i]: names[i] for i in indices}
-        self.logger.info(f"Selected languages: {name_codes}")
+        self.logger.info(f"Selected languages: {list(self.lang_code_to_name)}")
 
         return scrapy.Request(self.seed_page_url, callback=self.parse_page_response, cb_kwargs={'is_seed': True})
 
@@ -75,7 +74,7 @@ class WikiPageSpider(scrapy.Spider):
         article = response.xpath("//div[@id='mw-content-text']")[0]
         
         lang_code = extract_page_lang(response.url)
-        text = ''.join(article.css(".mw-parser-output").xpath("p | blockquote/p").xpath("./text()|./b/text()|./a/text()").getall())
+        text = ''.join(article.css(".mw-parser-output").xpath("p | blockquote/p").xpath("./text()|./b/text()|./a/text()").getall()).strip()
         if len(text) > 0:
             self.size_in_byte += len(text.encode())
             if (self.size_in_byte >> 20) >= self.limit_in_mb:
